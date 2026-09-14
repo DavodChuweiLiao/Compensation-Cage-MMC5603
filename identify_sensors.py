@@ -41,6 +41,8 @@ import adafruit_mmc56x3
 MCP2221_VID = 0x04D8
 MCP2221_PID = 0x00DD
 
+UT_TO_MG = 10.0  # 1 microtesla = 10 milligauss
+
 
 def find_mcp2221_paths():
     return [dev["path"] for dev in hid.enumerate(MCP2221_VID, MCP2221_PID)]
@@ -71,7 +73,8 @@ def stream_one(paths, index):
     try:
         while True:
             x, y, z = sensor.magnetic
-            print(f"[{index}] x={x:8.2f}  y={y:8.2f}  z={z:8.2f} uT")
+            x, y, z = x * UT_TO_MG, y * UT_TO_MG, z * UT_TO_MG
+            print(f"[{index}] x={x:8.2f}  y={y:8.2f}  z={z:8.2f} mG")
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -90,9 +93,11 @@ def stream_both(paths):
         while True:
             x1, y1, z1 = s1.magnetic
             x2, y2, z2 = s2.magnetic
+            x1, y1, z1 = x1 * UT_TO_MG, y1 * UT_TO_MG, z1 * UT_TO_MG
+            x2, y2, z2 = x2 * UT_TO_MG, y2 * UT_TO_MG, z2 * UT_TO_MG
             print(
                 f"[1] x={x1:8.2f} y={y1:8.2f} z={z1:8.2f}  |  "
-                f"[2] x={x2:8.2f} y={y2:8.2f} z={z2:8.2f}  (uT)"
+                f"[2] x={x2:8.2f} y={y2:8.2f} z={z2:8.2f}  (mG)"
             )
             time.sleep(0.1)
     except KeyboardInterrupt:
