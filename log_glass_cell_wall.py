@@ -102,15 +102,20 @@ class DailyCSVWriter:
         self.file.flush()
 
 
+UT_TO_MG = 10.0  # 1 microtesla = 10 milligauss
+
+
 def collect_window(sensors, window_s):
     """Read all sensors as fast as possible for window_s seconds.
-    Returns a list (one per sensor) of lists of (x, y, z) samples."""
+    Returns a list (one per sensor) of lists of (x, y, z) samples,
+    converted from uT (library units) to mG."""
     samples = [[] for _ in sensors]
     start = time.monotonic()
     while time.monotonic() - start < window_s:
         for i, sensor in enumerate(sensors):
             try:
-                samples[i].append(sensor.magnetic)
+                x, y, z = sensor.magnetic  # uT
+                samples[i].append((x * UT_TO_MG, y * UT_TO_MG, z * UT_TO_MG))
             except OSError:
                 pass  # skip a dropped I2C read, keep sampling
     return samples
@@ -132,7 +137,7 @@ def main():
     pairs = resolve_names(paths)
     sensors = []
     loggers = []
-    header = ["timestamp_s", "mag_x_uT", "mag_y_uT", "mag_z_uT", "n_samples"]
+    header = ["timestamp_s", "mag_x_mG", "mag_y_mG", "mag_z_mG", "n_samples"]
 
     for path, name in pairs:
         i2c = busio.I2C(bus_id=path)
@@ -151,7 +156,7 @@ def main():
                     print(f"[{name}] no samples this window, skipping")
                     continue
                 loggers[i].write_row([ts, avg[0], avg[1], avg[2], n])
-                print(f"[{name}] t={ts} x={avg[0]:.2f} y={avg[1]:.2f} z={avg[2]:.2f} (n={n})")
+                print(f"[{name}] t={ts} x={avg[0]:.2f} y={avg[1]:.2f} z={avg[2]:.2f} mG (n={n})")
     except KeyboardInterrupt:
         print("\nStopped by user.")
 
